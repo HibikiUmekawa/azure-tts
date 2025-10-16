@@ -21,7 +21,7 @@ JAPANESE_VOICES = [
 ]
 
 # ===================================================
-# 📖 draft.text の内容を読み込む関数
+# 📖 text.xml の内容を読み込む関数
 # ===================================================
 def read_text_file(file_path: str) -> str:
     if not os.path.exists(file_path):
@@ -35,7 +35,7 @@ def read_text_file(file_path: str) -> str:
 # ===================================================
 def synthesize_speech(text: str, voice_index: int = 1, output_file: str = "output.wav"):
     if not text:
-        print("⚠️ 読み上げるテキストが空です。draft.text の中身を確認してください。")
+        print("⚠️ 読み上げるテキストが空です。text.xml の中身を確認してください。")
         return
 
     if voice_index < 0 or voice_index >= len(JAPANESE_VOICES):
@@ -53,8 +53,8 @@ def synthesize_speech(text: str, voice_index: int = 1, output_file: str = "outpu
     audio_config = speechsdk.audio.AudioOutputConfig(filename=output_file)
     synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
 
-    print(f"🔊 draft.text の内容を音声に変換中...")
-    result = synthesizer.speak_text_async(text).get()
+    print(f"🔊 text.xml の内容を音声に変換中...")
+    result = synthesizer.speak_ssml_async(text).get()
 
     if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
         print(f"✅ 音声ファイルを生成しました: {output_file}")
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     # idx = int(input("番号を入力してください: "))
     idx = 0
 
-    # draft.text の内容を読み込む
-    draft_text = read_text_file("draft.text")
+    # text.xml の内容を読み込む
+    draft_text = read_text_file("text.xml")
 
     synthesize_speech(draft_text, voice_index=idx)
