@@ -1,3 +1,5 @@
 output.wav
 text.xml
 .env
+
+output/*
