@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import azure.cognitiveservices.speech as speechsdk
 from dotenv import load_dotenv
 
@@ -21,10 +22,10 @@ JAPANESE_VOICES = [
 ]
 
 # ===================================================
-# 📖 text.xml の内容を読み込む関数
+# 📖 XML の内容を読み込む関数
 # ===================================================
-def read_text_file(file_path: str) -> str:
-    if not os.path.exists(file_path):
+def read_text_file(file_path: Path) -> str:
+    if not file_path.exists():
         print(f"❌ 指定されたファイルが見つかりません: {file_path}")
         return ""
     with open(file_path, "r", encoding="utf-8") as f:
@@ -33,49 +34,55 @@ def read_text_file(file_path: str) -> str:
 # ===================================================
 # 🔧 音声合成関数
 # ===================================================
-def synthesize_speech(text: str, voice_index: int = 1, output_file: str = "output.wav"):
+def synthesize_speech(text: str, voice_index: int, output_file: Path):
     if not text:
-        print("⚠️ 読み上げるテキストが空です。text.xml の中身を確認してください。")
-        return
-
-    if voice_index < 0 or voice_index >= len(JAPANESE_VOICES):
-        print(f"❌ 無効な音声番号です。0〜{len(JAPANESE_VOICES)-1} の範囲で指定してください。")
+        print(f"⚠️ 読み上げるテキストが空です: {output_file.stem}")
         return
 
     voice_info = JAPANESE_VOICES[voice_index]
     voice_name = voice_info["name"]
 
-    print(f"🎤 選択中の音声: [{voice_index}] {voice_name} ({voice_info['desc']})")
+    print(f"\n🎤 [{voice_index}] {voice_name} - {voice_info['desc']}")
+    print(f"🔊 {output_file.stem}.xml の内容を音声に変換中...")
 
+    # Azure Speech 設定
     speech_config = speechsdk.SpeechConfig(subscription=speech_key, region=service_region)
     speech_config.speech_synthesis_voice_name = voice_name
+    audio_config = speechsdk.audio.AudioOutputConfig(filename=str(output_file))
 
-    audio_config = speechsdk.audio.AudioOutputConfig(filename=output_file)
     synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
 
-    print(f"🔊 text.xml の内容を音声に変換中...")
     result = synthesizer.speak_ssml_async(text).get()
 
     if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
-        print(f"✅ 音声ファイルを生成しました: {output_file}")
+        print(f"✅ 出力完了: {output_file.name}")
     elif result.reason == speechsdk.ResultReason.Canceled:
         cancellation = result.cancellation_details
-        print(f"❌ 音声合成に失敗しました: {cancellation.reason}")
+        print(f"❌ エラー: {cancellation.reason}")
         if cancellation.reason == speechsdk.CancellationReason.Error:
-            print(f"エラー詳細: {cancellation.error_details}")
+            print(f"詳細: {cancellation.error_details}")
 
 # ===================================================
 # 🧠 実行部
 # ===================================================
 if __name__ == "__main__":
-    print("🎙️ 利用可能な日本語音声:")
-    for i, v in enumerate(JAPANESE_VOICES):
-        print(f"  [{i}] {v['name']} - {v['desc']}")
+    draft_dir = Path(__file__).parent / "draft"
+    output_dir = Path(__file__).parent / "output"
+    output_dir.mkdir(exist_ok=True)
 
-    # idx = int(input("番号を入力してください: "))
+    # 音声選択（Nanami固定なら idx=0）
     idx = 0
 
-    # text.xml の内容を読み込む
-    draft_text = read_text_file("text.xml")
+    # -------------------------------
+    # 🔹 ユーザーがXMLファイル名を指定
+    # -------------------------------
+    filename = input("🎯 読み込む XML ファイル名を入力してください（例: text5-2.xml）: ").strip()
+    xml_path = draft_dir / filename
 
-    synthesize_speech(draft_text, voice_index=idx)
+    if not xml_path.exists():
+        print(f"❌ ファイルが見つかりません: {xml_path}")
+    else:
+        ssml_text = read_text_file(xml_path)
+        output_file = output_dir / (xml_path.stem + ".wav")
+        synthesize_speech(ssml_text, voice_index=idx, output_file=output_file)
+        print("\n🎉 音声ファイルの生成が完了しました！")
