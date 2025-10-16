@@ -22,7 +22,7 @@
 
 ```bash
 git clone <YOUR_REPOSITORY_URL>
-cd azure_tts_sample
+cd azure-tts
 ```
 
 ---
